@@ -160,7 +160,6 @@ static bool parse_arc(struct lib_obj *obj, const char *line)
 
 /* ----- Aliases ----------------------------------------------------------- */
 
-
 static void add_alias(struct comp *comp, const char *alias)
 {
 	struct comp_alias *new;
@@ -171,8 +170,33 @@ static void add_alias(struct comp *comp, const char *alias)
 	comp->aliases = new;
 }
 
+static void create_kicad5_alias(struct comp *comp, const struct file *file, const char *alias) {
+	// Add new alias for Kicad v5 support
+	char *libName = strstr(file->name, ".lib");
+	int nameLen = 0;
+	// Find start of lib name
+	while (*libName-- != '/') {
+		nameLen++;
+	}
+	// Correct accidental overstepping
+	libName += 2;
+	nameLen--;
 
-static bool add_aliases(struct comp *comp, const char *line)
+	// Create alias name
+	int mallocAmount = nameLen+2+strlen(alias);
+	char *aliasName = (char *)malloc(mallocAmount);
+	memcpy(aliasName, libName, nameLen);
+	aliasName[nameLen] = ':';
+	memcpy(aliasName+nameLen+1, alias , strlen(alias));
+	aliasName[mallocAmount-1] = '\0';
+
+	//printf("alias=\"%s\", aliasName=\"%s\", nameLen=\"%d\" file->name=\"%s\"\n", alias, aliasName, nameLen, file->name);
+	add_alias(comp, aliasName);
+	// add_alias creates a reference to aliasName so it can't be free'd here
+	// Easiest thing to do is just let the OS take the memeory back at the end
+}
+
+static bool add_aliases(struct comp *comp, const char *line, const struct file *file)
 {
 	const char *p;
 	int n;
@@ -182,8 +206,10 @@ static bool add_aliases(struct comp *comp, const char *line)
 		return 0;
 	if (!isspace(line[5]))
 		return 0;
-	for (p = line + 5; sscanf(p, " %ms%n", &s, &n) == 1; p += n)
+	for (p = line + 5; sscanf(p, " %ms%n", &s, &n) == 1; p += n) {
 		add_alias(comp, s);
+		create_kicad5_alias(comp, file, s);
+	}
 	return 1;
 }
 
@@ -253,12 +279,13 @@ static bool lib_parse_line(const struct file *file,
 				lib->curr_comp->visible |= 1 << i;
 			return 1;
 		}
-		if (add_aliases(lib->curr_comp, line))
+		if (add_aliases(lib->curr_comp, line, file))
 			return 1;
 		/* @@@ explicitly ignore FPLIST */
 		return 1;
 	case lib_draw:
 		if (sscanf(line, "ENDDRAW%n", &n) == 0 && n) {
+			create_kicad5_alias(lib->curr_comp, file, lib->curr_comp->name);
 			lib->state = lib_skip;
 			return 1;
 		}
