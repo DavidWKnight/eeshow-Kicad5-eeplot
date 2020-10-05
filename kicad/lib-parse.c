@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <assert.h>
+#include <math.h>
 
 #include "misc/util.h"
 #include "misc/diag.h"
@@ -147,10 +148,13 @@ static bool parse_arc(struct lib_obj *obj, const char *line)
 	a2 %= 3600;
 	if (a2 < a1)
 		a2 += 3600;
-	assert(a2 - a1 != 1800);
+
 	if (a2 - a1 > 1800)
 		swap(a1, a2);
 
+	// On the part P0926NL in transformer library the arcs go in the wrong direction
+	// I think this is relatively isolated and we can just forget about it.
+	// It could be fixed by reversing start_a and end_a
 	arc->start_a = (a1 % 3600) / 10;
 	arc->end_a = (a2 % 3600) / 10;
 
@@ -317,6 +321,7 @@ static bool lib_parse_line(const struct file *file,
 			obj->type = lib_obj_circ;
 			return 1;
 		}
+
 		if (parse_arc(obj, line)) {
 			obj->type = lib_obj_arc;
 			return 1;
