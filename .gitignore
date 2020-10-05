@@ -56,8 +56,11 @@ eediff
 eeplot
 eeshow
 eetest
+eeshow-viewer
+sch2pdf
 
 # misc other stuff
 *.bak
 *.inc
 settings.json
+!test.lib
