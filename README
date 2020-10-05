@@ -1,3 +1,9 @@
+This repo was forked from http://neo900.org/git/ee. This original version
+of the project does not appear to support Kicad v5 so this fork is to
+update the eeplot tool to work with Kicad v5. My end goal is to be
+able to plot a project to a pdf from the command line so new schematics
+can be automatically uploaded to a server in a ci/cd pipeline.
+
 eeshow - Eeschema schematics renderer and viewer
 ================================================
 
